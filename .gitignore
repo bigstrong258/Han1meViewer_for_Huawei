@@ -70,7 +70,5 @@ Thumbs.db
 # 忽略 debug 测试构建
 /app/build/outputs/apk/debug/
 
-# 忽略 Webview 内核
-/app/src/main/assets/com.google.android.webview.mp3
-
+# 忽略本地同步上游仓库脚本
 sync_upstream.bat

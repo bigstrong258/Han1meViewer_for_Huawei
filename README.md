@@ -1,36 +1,103 @@
 # Han1meViewer for Huawei (HarmonyOS)
 
-本项目是基于 [misaka10032w/Han1meViewer](https://github.com/misaka10032w/Han1meViewer) 的二次开发版本，专为解决华为/荣耀等搭载 **HarmonyOS 4.2** 及以上系统的设备在通过 Cloudflare 验证时出现的兼容性问题。
+本项目是基于 [misaka10032w/Han1meViewer](https://github.com/misaka10032w/Han1meViewer) 的二次开发版本，**专为解决华为/荣耀等搭载 HarmonyOS 4.2 及以上系统的设备**在通过 Cloudflare (CF) 验证时出现的“验证死循环”或“无法初始化内核”等兼容性问题。
 
-## 🌟 核心改进
+---
 
-- **内核升级支持**：集成 [WebViewUpgrade](https://github.com/JonaNorman/WebViewUpgrade) 项目，通过动态注入独立 WebView 内核，解决了鸿蒙系统底层 WebView 版本过低导致无法通过 Cloudflare 高级验证（死循环）的顽疾。
-- **签名校验绕过**：移除了原版应用中的签名一致性检查逻辑，支持用户自行编译、分发及侧载，解决了因签名不匹配导致的“应用已被篡改”警告及功能限制。
-- **正式版优化**：针对 Release 构建配置了精准的 ProGuard 混淆规则，确保在混淆状态下内核升级逻辑依然稳定运行。
+## 🌟 核心改进 (Core Improvements)
 
-## 📦 下载与安装
+- **内核升级支持**：集成 [WebViewUpgrade](https://github.com/JonaNorman/WebViewUpgrade) 项目，通过动态注入独立 WebView 内核，彻底解决了鸿蒙系统底层内核版本过低导致无法通过 Cloudflare 高级验证的顽疾。
+- **内核极致瘦身**：通过对原始 259MB 内核实施重构，在保证功能完整的前提下，将分发体积压制在 **95MB** 以内。
+    - **Deflate 极限压缩**：对核心 `libwebviewchromium.so` 实施高压缩比算法，成功避开 GitHub 100MB 单文件上传限制。
+    - **精简资源**：剔除armeabi-v7a包体和冗余语种包，仅保留中文和英文语言包。
+- **华为设备专项适配**：
+    - **强制开启 `extractNativeLibs="true"`**：通过强制开启解压属性，改变内核库的物理加载路径，从而规避系统对内置 APK 的签名指纹比对。
+    - **签名校验绕过**：移除了原版应用中的签名一致性检查逻辑，支持用户自行编译、分发及侧载。
 
-由于本项目集成了体积较大的独立内核，**请不要直接下载源码进行编译**（除非你阅读了下文的开发者说明）。
+---
 
-建议直接前往 [Releases](https://github.com/bigstrong258/Han1meViewer_for_Huawei/releases) 页面下载预编译好的 **APK 安装包**。
+## ⚠️ 重要运行须知 (Important: Must Read)
 
-## 🛠️ 开发者说明 (编译指南)
+由于 Android 系统加载 WebView 内核的单例机制（单个进程生命周期内仅加载一次），请务必按照以下流程操作以确保内核生效：
 
-由于 GitHub 的单文件大小限制（100MB），本项目源码仓库中**未包含** 200MB+ 的独立内核文件（`com.google.android.webview.apk`）。
+1. **环境准备 (约 10 秒)**：
+    - 首次安装或更换内核包后进入软件，底部会持续弹出 **“正在更新...”** 的提示框。
+    - 这是系统正在后台执行 APK 资产拷贝与 `.so` 库的动态解压（针对华为设备优化），整个过程大约持续 **10 秒** 左右。
 
-如果你希望自行编译本项目：
-1. 请自行获取合适的 WebView 内核文件（通常为 `.apk` 格式）。
-2. 将该文件重命名为 `com.google.android.webview.mp3`。
-3. 放置于 `app/src/main/assets/` 目录下。
-4. 确保 `WebViewUpgradeUtil` 中的调用逻辑与该文件名一致。
-5. 使用 Android Studio 进行打包。
+2. **判断就绪**：
+    - 当底部提示框 **停止弹出** 时，说明内核环境已在后台配置完成。
+
+3. **强制重启 (关键步骤)**：
+    - 此时新内核虽然已就绪，但由于当前应用进程已锁定旧内核，新内核尚未挂载。
+    - 请务必 **彻底关闭应用进程（从多任务任务栏中清理后台）并重新打开应用**。
+
+4. **验证生效**：
+    - 重启后，应用将正式挂载 95MB 的魔改版高性能内核。此时即可正常通过 Cloudflare (CF) 等高强度验证，彻底解决“验证死循环”问题。
+
+
+
+---
+
+## 📊 存储优化实测数据
+
+本项目采用的 **“压缩内核资产 + 动态解压运行”** 方案，在 `WebViewUpgrade` 的特定场景下实现了磁盘空间的最优化，有效解决了 Assets 冗余问题：
+
+| 方案 | APK 分发体积 | 安装后总占用 (App + Data) | 磁盘占用优化 |
+| :--- | :--- | :--- | :--- |
+| **原始方案 (Store 模式)** | ~182 MB | **~500 MB** | 存在严重的资产双重拷贝冗余 |
+| **优化方案 (Deflate 模式)** | **~95 MB** | **~359 MB** | **减少了 141MB (约 28%)** |
+
+
+
+---
+
+## 📱 设备建议与兼容性 (Compatibility)
+
+1. **华为/荣耀 (HarmonyOS 4.2+)**：
+> [!IMPORTANT]
+> **关于 Cloudflare (CF) 验证的说明**：
+> 若您在尝试更换网络环境（VPN），或将系统内置 **Huawei WebView** 更新至 **15.0.4.326**（等效于 Google WebView 114.0.5735.196）后，仍然无法正常通过 CF 验证或陷入验证死循环，您可以使用本项目。
+> 
+> **核心原理**：本项目通过内置魔改内核并重构加载路径，彻底绕过了鸿蒙系统对自定义 WebView 的内核拦截，是目前解决验证难题的“最后一道防线”。
+### 2. 其他品牌机型 (非华为设备)
+若您在以下品牌机型上遇到验证难题，可尝试使用本项目，但请注意**最低系统版本**限制：
+
+| 厂商 | 最低支持系统版本 (Android) | 备注 |
+| :--- | :--- | :--- |
+| **小米 (Xiaomi/Redmi)** | **Android 11** | 涵盖大部分 MIUI / HyperOS 设备 |
+| **vivo (iQOO)** | **Android 10** | 兼容性覆盖面较广 |
+| **OPPO (Realme/OnePlus)** | **Android 14** | **注意：** 低版本 ColorOS 兼容性较差 |
+
+### 🚫 不支持/不建议使用的设备
+* **三星 (Samsung)**：由于 Knox 安全策略限制，目前**不支持**在此类设备上运行，请勿尝试。
+* **Google Play 分包版 Chrome**：本项目仅支持一体化全量内核包，不支持通过 Google Play 安装的 Split APKs 模式内核。
+
+> **详细兼容性说明**：本项目底层基于 [WebViewUpgrade](https://github.com/JonaNorman/WebViewUpgrade/blob/main/README-ZH.md) 开发，更多机型支持细节请参考原项目文档。
+---
+
+## 🛠️ 开发者说明 (Compilation Guide)
+
+本项目现已 **内置** 优化后的内核包，支持克隆仓库后“开箱即用”。
+
+**编译步骤：**
+1. 使用 Android Studio 打开本项目。
+2. 内核文件位于 `app/src/main/assets/com.google.android.webview.mp3`。
+    - *注：采用 `.mp3` 伪装后缀是为了绕过 Aapt2 对大文件的二次扫描与压缩，确保读取稳定性。*
+3. 直接执行 `assembleRelease` 即可生成 APK。
+
+**二次开发警示：**
+若需自行更换内核文件，请务必确保 APK 内部的 `assets/icudtl.dat` 和所有 `.pak` 文件处于 **Store (不压缩)** 模式。若对这些核心资源实施 Deflate 压缩，会导致内核因无法获取 File Descriptor (FD) 而初始化闪退。
+
+---
 
 ## 📜 协议与致谢
 
 - 本项目基于 [Apache License 2.0](LICENSE) 协议开源。
-- 感谢原作者 [misaka10032w](https://github.com/misaka10032w/Han1meViewer) 提供的优秀项目基础。
-- 感谢 [JonaNorman](https://github.com/JonaNorman/WebViewUpgrade) 提供的 WebView 升级方案。
-- 感谢 [HitHate](https://github.com/misaka10032w/Han1meViewer/discussions/319) 提供的解决方案。
+- 感谢 [misaka10032w/Han1meViewer](https://github.com/misaka10032w/Han1meViewer) 提供的优秀项目基础。
+- 感谢 [JonaNorman/WebViewUpgrade](https://github.com/JonaNorman/WebViewUpgrade) 提供的内核注入方案。
+- 感谢 [HitHate](https://github.com/misaka10032w/Han1meViewer/discussions/319) 提供的解决思路。
+
+---
 
 ## ⚠️ 免责声明
 
