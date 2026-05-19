@@ -58,7 +58,7 @@ class VideoCommentRvAdapter(
                 oldItem: VideoComments.VideoComment,
                 newItem: VideoComments.VideoComment,
             ): Boolean {
-                return oldItem.realReplyId == newItem.realReplyId
+                return oldItem.stableKey == newItem.stableKey
             }
 
             override fun areContentsTheSame(
