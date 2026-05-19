@@ -218,6 +218,10 @@ dependencies {
     androidTestImplementation(libs.test.espresso.core)
 
     // debugImplementation(libs.leak.canary)
+
+    // WebviewUpgrade
+    implementation("io.github.jonanorman.android.webviewup:core:0.1.0")
+    implementation("io.github.jonanorman.android.webviewup:download-source:0.1.0")
 }
 
 /**

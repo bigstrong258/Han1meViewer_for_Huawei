@@ -33,6 +33,7 @@ import com.yenaly.han1meviewer.login
 import com.yenaly.han1meviewer.ui.screen.login.LoginDialog
 import com.yenaly.han1meviewer.ui.screen.login.LoginScreen
 import com.yenaly.han1meviewer.ui.theme.HanimeTheme
+import com.yenaly.han1meviewer.util.WebViewUpgradeUtil
 import com.yenaly.yenaly_libs.base.frame.FrameActivity
 import com.yenaly.yenaly_libs.utils.showShortToast
 import kotlinx.coroutines.launch
@@ -49,6 +50,12 @@ class LoginActivity : FrameActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        runCatching {
+            WebViewUpgradeUtil().Upgrade(this)
+        }.onFailure {
+            it.printStackTrace()
+        }
+
         super.onCreate(savedInstanceState)
         registerForActivityResult(
             ActivityResultContracts.RequestPermission()
@@ -157,9 +164,14 @@ class LoginActivity : FrameActivity() {
     }
 
     override fun onDestroy() {
+        webView?.apply {
+            stopLoading()
+            webViewClient = WebViewClient()
+            removeAllViews()
+            destroy()
+        }
+        webView = null
         super.onDestroy()
-        webView?.removeAllViews()
-        webView?.destroy()
     }
 
     private fun handleLogin(username: String, password: String) {

@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Bundle
+import android.util.Log
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -23,6 +24,7 @@ import com.yenaly.han1meviewer.USER_AGENT
 import com.yenaly.han1meviewer.ui.screen.web.CloudflareScreen
 import com.yenaly.han1meviewer.ui.theme.HanimeTheme
 import com.yenaly.han1meviewer.util.CookieString
+import com.yenaly.han1meviewer.util.WebViewUpgradeUtil
 import java.util.Locale
 
 class CloudflareActivity : AppCompatActivity() {
@@ -34,8 +36,15 @@ class CloudflareActivity : AppCompatActivity() {
 
     private val progressState = mutableIntStateOf(0)
     private val tipTextState = mutableStateOf("")
+    private var webView: WebView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        runCatching {
+            WebViewUpgradeUtil().Upgrade(this)
+        }.onFailure {
+            it.printStackTrace()
+        }
+
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
@@ -63,6 +72,7 @@ class CloudflareActivity : AppCompatActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     private fun createWebView(url: String): WebView {
         return WebView(this).apply {
+            webView = this
             val wv = this
             settings.apply {
                 javaScriptEnabled = true
@@ -92,6 +102,8 @@ class CloudflareActivity : AppCompatActivity() {
                 val chromePattern = "Chrome/(\\d+\\.\\d+\\.\\d+\\.\\d+)".toRegex()
                 val versionCode =
                     chromePattern.find(userAgent)?.groupValues?.getOrNull(1) ?: userAgent
+                Log.i("webViewVersion", "Version: $versionCode")
+                Log.i("webViewVersion", "UserAgent: $userAgent")
                 runOnUiThread {
                     var t = getString(R.string.complete_cloudflare_verification_with_warning)
                     t += getString(R.string.current_webview_version, versionCode)
@@ -140,6 +152,14 @@ class CloudflareActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        webView?.apply {
+            stopLoading()
+            webChromeClient = null
+            webViewClient = WebViewClient()
+            removeAllViews()
+            destroy()
+        }
+        webView = null
         super.onDestroy()
     }
 
