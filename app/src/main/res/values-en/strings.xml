@@ -624,8 +624,10 @@ Recommendations are as follows:\n
     <string name="webview_version_too_low">\n⚠️ WebView version is too low, verification may fail, recommended version is 120.x.x.x or above</string>
     <string name="webview_version_unknown">\n⚠️ Unable to identify WebView version</string>
     <string name="version_check_failed">\n⚠️ Version check failed</string>
-    <string name="webview_upgrade_processing">Updating WebView. The app will restart automatically when finished.</string>
-    <string name="webview_upgrade_complete_restart">WebView updated successfully. Restarting soon.</string>
+    <string name="webview_upgrade_processing">Preparing the WebView engine. Please wait.</string>
+    <string name="webview_upgrade_complete">WebView updated successfully. The newer engine is active.</string>
+    <string name="webview_upgrade_complete_restart">WebView updated successfully. Please clear the app from recents and reopen it.</string>
+    <string name="webview_upgrade_restart_required">WebView is ready. Please clear the app from recents and reopen it.</string>
     <string name="webview_upgrade_failed">WebView update failed</string>
     <string name="webview_upgrade_other_brand_hint">You can update WebView from the app store. Please try updating it and use the original HanimeViewer project first; use this project only if you cannot update WebView.</string>
     <string name="webview_upgrade_samsung_unsupported">Samsung devices are not supported by JonaNorman/WebViewUpgrade. Please update WebView through the app store or system update.</string>
