@@ -18,23 +18,48 @@
 
 ## ⚠️ 重要运行须知 (Important: Must Read)
 
-由于 Android 系统加载 WebView 内核的单例机制（单个进程生命周期内仅加载一次），请务必按照以下流程操作以确保内核生效：
+由于 Android 系统加载 WebView 内核的单例机制（单个进程生命周期内仅加载一次），首次使用内置 WebViewUpgrade 时需要完成一次“准备内核 -> 重启应用”的过程。自 `0.25.0-harmonyos-r2` 起，华为设备会在内核准备完成后自动重启应用，不再需要用户手动杀进程。
 
-1. **环境准备 (约 10 秒)**：
-    - 首次安装或更换内核包后进入软件，底部会持续弹出 **“正在更新...”** 的提示框。
-    - 这是系统正在后台执行 APK 资产拷贝与 `.so` 库的动态解压（针对华为设备优化），整个过程大约持续 **10 秒** 左右。
+1. **首次进入 Cloudflare 验证页**：
+    - 华为设备会自动执行内置 WebViewUpgrade。
+    - 底部会出现 **“正在更新 WebView，完成后将自动重启”** 之类的提示。
+    - 这是系统正在后台执行 APK 资产拷贝与 `.so` 库的动态解压，通常需要数秒到十几秒。
 
-2. **判断就绪**：
-    - 当底部提示框 **停止弹出** 时，说明内核环境已在后台配置完成。
+2. **自动重启**：
+    - 当 WebView 更新完成后，应用会自动重启，使新的 WebView 实现生效。
+    - 如果设备或系统策略阻止自动重启，请手动从最近任务中清理应用后重新打开。
 
-3. **强制重启 (关键步骤)**：
-    - 此时新内核虽然已就绪，但由于当前应用进程已锁定旧内核，新内核尚未挂载。
-    - 请务必 **彻底关闭应用进程（从多任务任务栏中清理后台）并重新打开应用**。
+3. **再次进入验证页**：
+    - 重启后，应用将挂载内置高版本 WebView 内核。
+    - 此时再进入 Cloudflare 验证页，通常即可通过验证。
 
-4. **验证生效**：
-    - 重启后，应用将正式挂载 95MB 的魔改版高性能内核。此时即可正常通过 Cloudflare (CF) 等高强度验证，彻底解决“验证死循环”问题。
+4. **非华为设备提示**：
+    - 三星设备不执行 WebViewUpgrade，请通过应用商店或系统更新 WebView。
+    - 其他非华为设备会提示优先通过应用商店更新系统 WebView。若能正常更新系统 WebView，建议优先使用原 Han1meViewer 项目。
+
+> [!NOTE]
+> 旧版本可能仍需手动杀进程，且更新源、公告源或反馈入口可能仍指向上游项目。建议 Huawei 特供版用户更新到 `0.25.0-harmonyos-r2` 或更新版本。
 
 
+---
+
+## 📮 反馈与交流 (Feedback)
+
+如果您遇到 Cloudflare 验证失败、WebViewUpgrade 更新失败、应用崩溃、评论区异常等问题，请尽量反馈。很多崩溃只能从 Firebase Crashlytics 看到概况，缺少设备型号和操作路径时很难定位。
+
+推荐反馈渠道：
+
+- GitHub Issues: [https://github.com/bigstrong258/Han1meViewer-for-Huawei/issues](https://github.com/bigstrong258/Han1meViewer-for-Huawei/issues)
+- GitHub Discussions: [https://github.com/bigstrong258/Han1meViewer-for-Huawei/discussions](https://github.com/bigstrong258/Han1meViewer-for-Huawei/discussions)
+- Email: `pikapikasunny77@gmail.com`
+
+反馈时请尽量附带：
+
+- 手机型号，例如 `HUAWEI LRA-AL00`
+- Android / HarmonyOS 版本
+- Han1meViewer 版本号
+- 崩溃前正在进行的操作
+- 截图、录屏或 Crashlytics 堆栈信息
 
 ---
 
@@ -80,7 +105,12 @@
 本项目现已 **内置** 优化后的内核包，支持克隆仓库后“开箱即用”。
 
 **编译步骤：**
-1. 使用 Android Studio 打开本项目。
+1. 克隆本 fork 并使用 Android Studio 打开：
+
+   ```bash
+   git clone https://github.com/bigstrong258/Han1meViewer-for-Huawei.git
+   ```
+
 2. 内核文件位于 `app/src/main/assets/com.google.android.webview.mp3`。
     - *注：采用 `.mp3` 伪装后缀是为了绕过 Aapt2 对大文件的二次扫描与压缩，确保读取稳定性。*
 3. 直接执行 `assembleRelease` 即可生成 APK。
